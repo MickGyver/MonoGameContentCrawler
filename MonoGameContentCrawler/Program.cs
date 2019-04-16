@@ -14,34 +14,52 @@ namespace MonoGameContentCrawler
   {
     static void Main(string[] args)
     {
-      string directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      string directory = Environment.CurrentDirectory;//Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
       string contentFile = "Content.mgcb";
-      string contentFilePath = "";
+      string contentFilePath = contentFilePath = Path.Combine(directory, contentFile);
 
       Console.WriteLine("*********************************");
       Console.WriteLine("* MonoGame Content Crawler v0.1 *");
       Console.WriteLine("*   by Mick @ GamePhase 2019    *");
       Console.WriteLine("*********************************");
 
-
+      // Is a specific content file supplied as argument?
       if (args.Length > 0)
       {
         if (args[0].EndsWith(".mgcb"))
-          contentFile = args[0];
+        {
+          if (File.Exists(args[0]))
+          {
+            contentFilePath = args[0];
+            FileInfo fInfo = new FileInfo(contentFilePath);
+            contentFile = fInfo.Name;
+            directory = fInfo.DirectoryName;
+          }
+          else if (File.Exists(Path.Combine(directory,args[0])))
+          {
+            contentFile = args[0];
+            contentFilePath = Path.Combine(directory, contentFile);
+          }
+          else
+          {
+            Console.WriteLine("'" + args[0] + "' does not exist!");
+            Environment.Exit(0);
+          }
+        }
         else
         {
           Console.WriteLine("The argument supplied has to be a .mgcb content file!");
           Environment.Exit(0);
         }
       }
-
-      contentFilePath = Path.Combine(directory, contentFile);
-
-      if (!File.Exists(contentFile))
+      else if (!File.Exists(contentFile))
       {
         Console.WriteLine("'" + contentFile + "' does not exist!");
         Environment.Exit(0);
       }
+
+      Console.WriteLine("Root folder: " + directory);
+      Console.WriteLine("Content file: " + contentFile);
 
       string content = File.ReadAllText(contentFilePath);
 
@@ -51,10 +69,7 @@ namespace MonoGameContentCrawler
 
       File.WriteAllText(contentFilePath, content);
 
-      Console.WriteLine("\nAll done, press any key to exit!");
-
-      Console.ReadKey();
-      
+      Console.WriteLine("\nAll done!");
     }
 
     static void ProcessFolder(ref string content, string rootPath, string subPath)
@@ -86,8 +101,6 @@ namespace MonoGameContentCrawler
         DirectoryInfo dInfo = new DirectoryInfo(folder);
         ProcessFolder(ref content, rootPath, Path.Combine(subPath, dInfo.Name));
       }
-
-      // return content;
     }
 
     static bool checkValidExtension(string path)
@@ -100,9 +113,9 @@ namespace MonoGameContentCrawler
 
     static string addResource(string rootPath, string subPath, string fileName)
     {
-      FileInfo fInfo = new FileInfo(Path.Combine(rootPath,subPath,fileName));
+      FileInfo fInfo = new FileInfo(Path.Combine(rootPath, subPath, fileName));
       string content = "";
-      string filePath = (subPath.Length > 0 ? subPath.Replace("\\", "/")+"/" : "") + fileName;
+      string filePath = (subPath.Length > 0 ? subPath.Replace("\\", "/") + "/" : "") + fileName;
 
       switch (fInfo.Extension.ToLower())
       {
@@ -173,7 +186,7 @@ namespace MonoGameContentCrawler
 
           content += "\r\n\r\n#begin " + filePath + "\r\n";
           content += "/importer:FontDescriptionImporter\r\n";
-          if(localizedFont)
+          if (localizedFont)
             content += "/processor:LocalizedFontProcessor\r\n";
           else
             content += "/processor:FontDescriptionProcessor\r\n";
