@@ -14,14 +14,30 @@ namespace MonoGameContentCrawler
   {
     static void Main(string[] args)
     {
-      string directory = Environment.CurrentDirectory;//Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      string appDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      string directory = Environment.CurrentDirectory;
       string contentFile = "Content.mgcb";
       string contentFilePath = contentFilePath = Path.Combine(directory, contentFile);
+      Dictionary<string, ContentType> contentTypes = new Dictionary<string, ContentType>();
 
       Console.WriteLine("*********************************");
-      Console.WriteLine("* MonoGame Content Crawler v0.1 *");
+      Console.WriteLine("* MonoGame Content Crawler v0.2 *");
       Console.WriteLine("*   by Mick @ GamePhase 2019    *");
       Console.WriteLine("*********************************");
+
+      // Add content types
+      string configPath = null;
+      if (File.Exists(Path.Combine(appDirectory, "MonoGameContentCrawler.config")))
+      {
+        AddContentTypes(contentTypes, Path.Combine(appDirectory, "MonoGameContentCrawler.config"));
+      }
+      else
+      {
+        Console.WriteLine("Configuration file does not exist!");
+        Environment.Exit(0);
+      }
+
+
 
       // Is a specific content file supplied as argument?
       if (args.Length > 0)
@@ -35,7 +51,7 @@ namespace MonoGameContentCrawler
             contentFile = fInfo.Name;
             directory = fInfo.DirectoryName;
           }
-          else if (File.Exists(Path.Combine(directory,args[0])))
+          else if (File.Exists(Path.Combine(directory, args[0])))
           {
             contentFile = args[0];
             contentFilePath = Path.Combine(directory, contentFile);
@@ -213,6 +229,38 @@ namespace MonoGameContentCrawler
       }
 
       return content;
+    }
+
+    private static bool AddContentTypes(Dictionary<string, ContentType> contentTypes, string configPath)
+    {
+      if (configPath != null)
+      {
+        // Read config file
+        string line;
+        bool newType = true;
+        string[] extensions;
+        System.IO.StreamReader configFile = new StreamReader(configPath);
+        while ((line = configFile.ReadLine()) != null)
+        {
+          line = line.Trim();
+          if (line.Length == 0)
+            newType = true;
+          else
+          {
+            if (newType)
+              extensions = line.Split(';');
+            else
+            {
+
+            }
+          }
+          Console.WriteLine(line);
+        }  
+
+        return true;
+      }
+      else
+        return false;
     }
 
   }
