@@ -12,13 +12,15 @@ namespace MonoGameContentCrawler
 {
   class Program
   {
+    static private Dictionary<string, ContentType> _contentTypes = new Dictionary<string, ContentType>();
+
     static void Main(string[] args)
     {
       string appDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
       string directory = Environment.CurrentDirectory;
       string contentFile = "Content.mgcb";
       string contentFilePath = contentFilePath = Path.Combine(directory, contentFile);
-      Dictionary<string, ContentType> contentTypes = new Dictionary<string, ContentType>();
+      
 
       Console.WriteLine("*********************************");
       Console.WriteLine("* MonoGame Content Crawler v0.2 *");
@@ -29,15 +31,13 @@ namespace MonoGameContentCrawler
       string configPath = null;
       if (File.Exists(Path.Combine(appDirectory, "MonoGameContentCrawler.config")))
       {
-        AddContentTypes(contentTypes, Path.Combine(appDirectory, "MonoGameContentCrawler.config"));
+        AddContentTypes(Path.Combine(appDirectory, "MonoGameContentCrawler.config"));
       }
       else
       {
         Console.WriteLine("Configuration file does not exist!");
         Environment.Exit(0);
       }
-
-
 
       // Is a specific content file supplied as argument?
       if (args.Length > 0)
@@ -133,57 +133,14 @@ namespace MonoGameContentCrawler
       string content = "";
       string filePath = (subPath.Length > 0 ? subPath.Replace("\\", "/") + "/" : "") + fileName;
 
-      switch (fInfo.Extension.ToLower())
+      string extension = fInfo.Extension.ToLower();
+      if (_contentTypes.ContainsKey(extension))
       {
-        case ".mp3":
-          content += "\r\n\r\n#begin " + filePath + "\r\n";
-          content += "/importer:Mp3Importer\r\n";
-          content += "/processor:SongProcessor\r\n";
-          content += "/processorParam:Quality=Best\r\n";
-          content += "/build:" + filePath;
-          break;
-
-        case ".wma":
-          content += "\r\n\r\n#begin " + filePath + "\r\n";
-          content += "/importer:WmaImporter\r\n";
-          content += "/processor:SongProcessor\r\n";
-          content += "/processorParam:Quality=Best\r\n";
-          content += "/build:" + filePath;
-          break;
-
-        case ".wav":
-          content += "\n\n#begin " + filePath + "\n";
-          content += "/importer:WavImporter\n";
-          content += "/processor:SoundEffectProcessor\n";
-          content += "/processorParam:Quality=Best\n";
-          content += "/build:" + filePath;
-          break;
-
-        case ".bmp":
-        case ".jpg":
-        case ".png":
-        case ".tga":
-          content += "\r\n\r\n#begin " + filePath + "\r\n";
-          content += "/importer:TextureImporter\r\n";
-          content += "/processor:TextureProcessor\r\n";
-          content += "/processorParam:ColorKeyColor=255,0,255,255\r\n";
-          content += "/processorParam:ColorKeyEnabled=True\r\n";
-          content += "/processorParam:GenerateMipmaps=False\r\n";
-          content += "/processorParam:PremultiplyAlpha=True\r\n";
-          content += "/processorParam:ResizeToPowerOfTwo=False\r\n";
-          content += "/processorParam:MakeSquare=False\r\n";
-          content += "/processorParam:TextureFormat=Color\r\n";
-          content += "/build:" + filePath;
-          break;
-
-        case ".fx":
-          content += "\r\n\r\n#begin " + filePath + "\r\n";
-          content += "/importer:EffectImporter\r\n";
-          content += "/processor:EffectProcessor\r\n";
-          content += "/processorParam:DebugMode=Auto\r\n";
-          content += "/build:" + filePath;
-          break;
-
+        content = _contentTypes[extension].BuildContent(rootPath, filePath);
+      }
+      
+      /*switch (fInfo.Extension.ToLower())
+      {
         case ".spritefont":
           bool localizedFont = false;
           XmlDocument xmlDoc = new XmlDocument();
@@ -210,57 +167,68 @@ namespace MonoGameContentCrawler
           content += "/processorParam:TextureFormat=Compressed\r\n";
           content += "/build:" + filePath;
           break;
-
-        case ".xml":
-          content += "\r\n\r\n#begin " + filePath + "\r\n";
-          content += "/importer:XmlImporter\r\n";
-          content += "/processor:PassThroughProcessor\r\n";
-          content += "/build:" + filePath;
-          break;
-
-        /*case ".":
-          content += "\n\n#begin " + filePath + "\n";
-          content += "\n";
-          content += "\n";
-          content += "\n";
-          content += "/build:" + filePath;
-          break;*/
-
-      }
+      }*/
 
       return content;
     }
 
-    private static bool AddContentTypes(Dictionary<string, ContentType> contentTypes, string configPath)
+    private static bool AddContentTypes(string configPath)
     {
       if (configPath != null)
       {
-        // Read config file
+       // Declare variables 
         string line;
+        string lines = "";
         bool newType = true;
-        string[] extensions;
+        bool typeAdded = true;
+        string[] extensions = null;
+
+        // Read config file, line by line
         System.IO.StreamReader configFile = new StreamReader(configPath);
         while ((line = configFile.ReadLine()) != null)
         {
           line = line.Trim();
           if (line.Length == 0)
+          {
+            if (!typeAdded)
+            {
+              AddContentType(extensions, lines);
+              typeAdded = true;
+            }
             newType = true;
+          }
           else
           {
             if (newType)
+            {
               extensions = line.Split(';');
+              newType = false;
+              lines = "";
+              typeAdded = false;
+            }
             else
             {
-
+              lines += line + "\r\n";
             }
           }
-          Console.WriteLine(line);
         }  
+        // Add last content type if it hasn't already been added
+        if (!typeAdded)
+          AddContentType(extensions, lines);
 
         return true;
       }
       else
         return false;
+    }
+
+    private static void AddContentType(string[] extensions, string template)
+    {
+      foreach (string extension in extensions)
+      {
+        ContentType type = new ContentType(extension,template);
+        _contentTypes.Add(extension,type);
+      }
     }
 
   }
