@@ -7,7 +7,7 @@ Download the latest release and copy MonoGameContentCrawler.exe (and .config) to
 ### Advanced use
 If you want to use another content project file, just add the name or full path of the content file as an argument (optionally creating a batch file). You can have MonoGameContentCrawler.exe (and .config) somewhere in the PATH (Windows folder etc.).
 
-## Supported assets
+### Supported assets
 The MonoGameContentCrawler.config file has templates for all supported asset types, based on filename extensions. Add or remove templates as you wish. Files with extensions not in the config file will be ignored. The format of the extension file should be self explanatory but you need to have an empty line between templates. If a config file exists in the same folder as the content project file, that config file will be used instead of the config file in the application folder.
 
 ### Limitations
