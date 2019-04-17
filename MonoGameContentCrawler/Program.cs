@@ -23,13 +23,16 @@ namespace MonoGameContentCrawler
       
 
       Console.WriteLine("*********************************");
-      Console.WriteLine("* MonoGame Content Crawler v0.2 *");
+      Console.WriteLine("* MonoGame Content Crawler v0.3 *");
       Console.WriteLine("*   by Mick @ GamePhase 2019    *");
       Console.WriteLine("*********************************");
 
-      // Add content types
-      string configPath = null;
-      if (File.Exists(Path.Combine(appDirectory, "MonoGameContentCrawler.config")))
+      // Add content types (from environment folder or application folder)
+      if (File.Exists(Path.Combine(directory, "MonoGameContentCrawler.config")))
+      {
+        AddContentTypes(Path.Combine(directory, "MonoGameContentCrawler.config"));
+      }
+      else if (File.Exists(Path.Combine(appDirectory, "MonoGameContentCrawler.config")))
       {
         AddContentTypes(Path.Combine(appDirectory, "MonoGameContentCrawler.config"));
       }
@@ -138,37 +141,6 @@ namespace MonoGameContentCrawler
       {
         content = _contentTypes[extension].BuildContent(rootPath, filePath);
       }
-      
-      /*switch (fInfo.Extension.ToLower())
-      {
-        case ".spritefont":
-          bool localizedFont = false;
-          XmlDocument xmlDoc = new XmlDocument();
-          try
-          {
-            xmlDoc.Load(fInfo.FullName);
-            XmlNode xmlNode = xmlDoc.SelectSingleNode("//Asset");
-            XmlAttribute xmlAttribute = (XmlAttribute)xmlNode.Attributes.GetNamedItem("Type");
-            if (xmlAttribute.InnerText.ToLower() == "graphics:localizedfontdescription")
-              localizedFont = true;
-          }
-          catch (Exception ex)
-          {
-            Console.WriteLine(ex.ToString());
-          }
-
-          content += "\r\n\r\n#begin " + filePath + "\r\n";
-          content += "/importer:FontDescriptionImporter\r\n";
-          if (localizedFont)
-            content += "/processor:LocalizedFontProcessor\r\n";
-          else
-            content += "/processor:FontDescriptionProcessor\r\n";
-          content += "/processorParam:PremultiplyAlpha=True\r\n";
-          content += "/processorParam:TextureFormat=Compressed\r\n";
-          content += "/build:" + filePath;
-          break;
-      }*/
-
       return content;
     }
 
@@ -226,8 +198,27 @@ namespace MonoGameContentCrawler
     {
       foreach (string extension in extensions)
       {
-        ContentType type = new ContentType(extension,template);
-        _contentTypes.Add(extension,type);
+        // Check if custom class
+        string className = "";
+        Type t = null;
+        if (template.ToLower().StartsWith("/class:"))
+        {
+          className = template.Substring(7).Trim();
+          t = Type.GetType("MonoGameContentCrawler."+className);
+          if (t != null)
+            Console.WriteLine("Class: " + className);
+        }
+        if (t != null)
+        {
+          object[] parameters = new object[] { extension, template };
+          ContentType type = (ContentType)Activator.CreateInstance(t, parameters);
+          _contentTypes.Add(extension, type);
+        }
+        else
+        {
+          ContentType type = new ContentType(extension, template);
+          _contentTypes.Add(extension, type);
+        }
       }
     }
 
